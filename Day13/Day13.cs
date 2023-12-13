@@ -62,19 +62,40 @@ static int GetLinesBeforeVertical(List<string> mapStrings){
     return GetLinesAboveHorizontal(flippedMapStrings);
 }
 
+static int GetDifferences(string string1, string string2){
+
+    int totalDifferences = 0;
+
+    for(int i = 0; i < string1.Length; i++){
+        if (string1[i]!=string2[i]){
+            totalDifferences++;
+        }
+    }
+
+    return totalDifferences;
+}
+
 static bool CheckCut(List<string> list, int cut){
     int rowsBefore = cut;
     int rowsAfter = list.Count - cut;
 
     int range = Math.Min(rowsBefore, rowsAfter);
 
+    int totalDifferences = 0;
+
     for (int i = 0; i < range; i++){
-        if (!list[cut-1-i].Equals(list[cut+i])){
+
+        string string1 = list[cut-1-i];
+        string string2 = list[cut+i];
+
+        totalDifferences += GetDifferences(string1, string2);
+
+        if (totalDifferences>1){
             return false;
         }
     }
 
-    return true;
+    return totalDifferences == 1;
 }
 
 static int GetLinesAboveHorizontal(List<string> mapStrings){
@@ -135,6 +156,45 @@ static void Task1(string[] input) {
 
 static void Task2(string[] input){
 
+    List<int> linesBeforeVertical = [];
+    List<int> linesAboveHorizontal = [];
+
+    // Fill for each map
+    List<string> mapStrings = [];
+
+    int hor;
+    int ver;
+
+    foreach (string line in input){
+
+        if (line.Length == 0){
+
+            hor = GetLinesAboveHorizontal(mapStrings);
+            ver = GetLinesBeforeVertical(mapStrings);
+
+            //Console.WriteLine("Hor: " + hor + " Ver: " + ver);
+
+            linesAboveHorizontal.Add(hor);
+            linesBeforeVertical.Add(ver);
+
+            mapStrings = [];
+        } else {
+            mapStrings.Add(line);
+        }
+    }
+
+    hor = GetLinesAboveHorizontal(mapStrings);
+    ver = GetLinesBeforeVertical(mapStrings);
+
+    //Console.WriteLine("Hor: " + hor + " Ver: " + ver);
+
+    linesAboveHorizontal.Add(hor);
+    linesBeforeVertical.Add(ver);
+    
+
+    int summarization = linesBeforeVertical.Sum() + 100*linesAboveHorizontal.Sum();
+
+    Console.WriteLine(summarization);
 
 }
 
