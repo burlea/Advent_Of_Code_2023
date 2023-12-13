@@ -13,7 +13,7 @@ partial class Program
 static void Main()
 {
     string[] input = File.ReadAllLines("input.txt");
-    // Task1(input);
+    Task1(input);
     Task2(input);
 }
 
@@ -106,31 +106,36 @@ static bool tooManyConsecutiveBroken(string springs, List<int> numbers){
 
     List<int> brokenSpringCount = getBrokenSpringsCount(springs);
 
+    if (brokenSpringCount.Count == 0){
+        return false;
+    }
+
     return brokenSpringCount.Max() > numbers.Max();
     
 }
 
-// static void Task1(string[] input) {
+static void Task1(string[] input) {
 
-//     long totalCombinations = 0;
+    long totalCombinations = 0;
 
-//     for (int i = 0; i < input.Length; i++){
-//         string[] parts = input[i].Split(' ');
+    for (int i = 0; i < input.Length; i++){
+        string[] parts = input[i].Split(' ');
 
-//          if (!parts[0].Contains('?')){
-//             continue;
-//         }
+         if (!parts[0].Contains('?')){
+            continue;
+        }
 
-//         List<int> numbers = parts[1].Split(',').ToList().ConvertAll<int>(number => Int32.Parse(number));
+        List<int> numbers = parts[1].Split(',').ToList().ConvertAll<int>(number => Int32.Parse(number));
+        Dictionary<string,long> solutionsMap = [];
 
-//         totalCombinations += recursivelyGetAllCombinations(parts[0], numbers);
+        totalCombinations += recursivelyGetAllCombinations(parts[0], numbers, solutionsMap);
 
-//         // Console.WriteLine("Total So Far: " + totalCombinations);
-//         // Console.WriteLine("Starting: " +  parts[0]);
-//     }
+        // Console.WriteLine("Total So Far: " + totalCombinations);
+        // Console.WriteLine("Starting: " +  parts[0]);
+    }
 
-//     Console.WriteLine(totalCombinations);
-// }
+    Console.WriteLine(totalCombinations);
+}
 
 static void Task2(string[] input){
 
