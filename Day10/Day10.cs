@@ -185,44 +185,11 @@ static void Task1(char [,] map) {
     
 }
 
-// static void Task2(char [,] map){
+static void Task2(char [,] map){
+// Try DFS to get one true loop
+// Eliminate all things not in that path
+// Make new map with just one symbol for all loop
+// do intersection algorithm on that
 
-//     //PrintMap("Starting Map", map);
-
-//     List<Tuple<int,int>> currentSpotsToLookAt = [];
-//     int [,] distances = new int[map.GetLength(0),map.GetLength(1)];
-
-//     // initialize with starting location
-
-//     for (int i = 0; i < map.GetLength(0); i++){
-//         for(int j = 0; j < map.GetLength(1); j++) {
-//            if(map[i,j]=='S'){
-//             currentSpotsToLookAt.Add(Tuple.Create(i,j));
-//            }
-//         }
-//     }
-
-//     int distanceFromStart = -1;
-
-//     Tuple<int,int> startingPoint = currentSpotsToLookAt.First();
-
-//     do {
-
-//         List<Tuple<int,int>> nextSpotsToLookAt = [];
-//         distanceFromStart++;
-
-//         foreach(Tuple<int,int> spotToLookAt in currentSpotsToLookAt){
-//             distances[spotToLookAt.Item1,spotToLookAt.Item2] = distanceFromStart;
-//             AddSpots(spotToLookAt,map,nextSpotsToLookAt,distances);
-//         }
-
-//         PrintMap("Distances At iteration: " + distanceFromStart, distances);
-
-//         currentSpotsToLookAt = [.. nextSpotsToLookAt];
-//     } while(!currentSpotsToLookAt.Contains(startingPoint));
-
-
-
-//     Console.WriteLine(distanceFromStart);
-// }
+}
 }
