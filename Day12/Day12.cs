@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Text.RegularExpressions;
 using Microsoft.VisualBasic;
-
+    
 partial class Program
 {
     
@@ -14,104 +14,96 @@ static void Main()
 {
     string[] input = File.ReadAllLines("input.txt");
     Task1(input);
-    Task2(input);
+    //Task2(input);
 }
 
-static List<int> getBrokenSpringsCount(string springs){
-    List<int> brokenSprings = [];
-    int currentTotalBrokenSprings = 0;
+// static List<int> getBrokenSpringsCount(string springs){
+//     List<int> brokenSprings = [];
+//     int currentTotalBrokenSprings = 0;
 
-    for (int i = 0; i <springs.Length; i++){
-        if (springs[i] == '#'){
-            currentTotalBrokenSprings++;
-        } else {
-            if (currentTotalBrokenSprings != 0){
-                brokenSprings.Add(currentTotalBrokenSprings);
-                currentTotalBrokenSprings = 0;
-            }
-        }
-    }
+//     for (int i = 0; i <springs.Length; i++){
+//         if (springs[i] == '#'){
+//             currentTotalBrokenSprings++;
+//         } else {
+//             if (currentTotalBrokenSprings != 0){
+//                 brokenSprings.Add(currentTotalBrokenSprings);
+//                 currentTotalBrokenSprings = 0;
+//             }
+//         }
+//     }
 
-    if (currentTotalBrokenSprings != 0){
-        brokenSprings.Add(currentTotalBrokenSprings);
-    }
+//     if (currentTotalBrokenSprings != 0){
+//         brokenSprings.Add(currentTotalBrokenSprings);
+//     }
 
-    return brokenSprings;
-}
+//     return brokenSprings;
+// }
 
-static bool SeeIfSolutionCorrect(string springs, List<int> numbers) {
+// static bool SeeIfSolutionCorrect(string springs, List<int> numbers) {
 
-    List<int> brokenSprings = getBrokenSpringsCount(springs);
+//     List<int> brokenSprings = getBrokenSpringsCount(springs);
 
-    if (brokenSprings.Count != numbers.Count){
-        return false;
-    }
+//     if (brokenSprings.Count != numbers.Count){
+//         return false;
+//     }
 
-    for (int i = 0; i < brokenSprings.Count; i++){
-        if (brokenSprings[i] != numbers[i]){
-            return false;
-        }
-    }
+//     for (int i = 0; i < brokenSprings.Count; i++){
+//         if (brokenSprings[i] != numbers[i]){
+//             return false;
+//         }
+//     }
 
-    return true;
-}
+//     return true;
+// }
 
-static long recursivelyGetAllCombinations(string currentSprings, List<int> numbers, Dictionary<string,long> solutionsMap){
+static long recursivelyGetAllCombinations(string currentSprings, List<int> numbers, Dictionary<Tuple<string, int>,long> solutionsMap, int currentGroupSize){
 
-if (solutionsMap.TryGetValue(currentSprings, out long value)){
-    return value;
-}
+Console.WriteLine("Current Springs: " + currentSprings + " Current Group Size: " + currentGroupSize);
 
-if (!currentSprings.Contains('?')){
-    if (SeeIfSolutionCorrect(currentSprings, numbers)){
+if (currentSprings.Length == 0){
+    if (numbers.Count == 0 && currentGroupSize == 0){
         return 1;
     } else {
         return 0;
     }
 } else {
-    var regex = new Regex(Regex.Escape("?"));
+    if (solutionsMap.TryGetValue(Tuple.Create(currentSprings, currentGroupSize), out long value)){
+        return value;
+    } else {
+        long total = 0;
 
-    if (tooManyBroken(currentSprings, numbers)){
-        return 0;
+        char currentSpring = currentSprings[0];
+
+        if (currentSpring == '?'){
+
+            // for '#' future
+            total += recursivelyGetAllCombinations(currentSprings[1..], numbers, solutionsMap, currentGroupSize+1);
+
+            //for '.' future
+             if (currentGroupSize == 0){
+                total += recursivelyGetAllCombinations(currentSprings[1..], numbers, solutionsMap, 0);
+            } else {
+                if (numbers.Count != 0 && numbers.First() == currentGroupSize){
+                    total += recursivelyGetAllCombinations(currentSprings[1..], numbers[1..], solutionsMap, 0);
+                }
+            }
+
+        } else if (currentSpring == '#') {
+            total += recursivelyGetAllCombinations(currentSprings[1..], numbers, solutionsMap, currentGroupSize + 1);
+
+        } else { // a '.'
+            if (currentGroupSize == 0){
+                total += recursivelyGetAllCombinations(currentSprings[1..], numbers, solutionsMap, 0);
+            } else {
+                if (numbers.Count != 0 && numbers.First() == currentGroupSize){
+                    total += recursivelyGetAllCombinations(currentSprings[1..], numbers[1..], solutionsMap, 0);
+                }
+            }
+        }
+        solutionsMap[Tuple.Create(currentSprings, currentGroupSize)] = total;
+        return total;
     }
-
-    if (notEnoughBroken(currentSprings, numbers)){
-        return 0;
-    }
-
-    if (tooManyConsecutiveBroken(currentSprings, numbers)){
-        return 0;
-    }
-    
-    string nextOneIsBroken = regex.Replace(currentSprings, "#", 1);
-    string nextOneIsOperational = regex.Replace(currentSprings, ".", 1);
-
-    long total = recursivelyGetAllCombinations(nextOneIsBroken, numbers, solutionsMap) + recursivelyGetAllCombinations(nextOneIsOperational, numbers, solutionsMap);
-
-    solutionsMap[currentSprings] = total;
-    return total;
 }
-    
-}
-
-static bool tooManyBroken(string springs, List<int> numbers){
-    return springs.Count(spring => spring == '#') > numbers.Sum();
-}
-
-static bool notEnoughBroken(string springs, List<int> numbers){
-    return springs.Count(spring => spring == '#' || spring=='?') < numbers.Sum();
-}
-
-static bool tooManyConsecutiveBroken(string springs, List<int> numbers){
-
-    List<int> brokenSpringCount = getBrokenSpringsCount(springs);
-
-    if (brokenSpringCount.Count == 0){
-        return false;
-    }
-
-    return brokenSpringCount.Max() > numbers.Max();
-    
 }
 
 static void Task1(string[] input) {
@@ -126,9 +118,9 @@ static void Task1(string[] input) {
         }
 
         List<int> numbers = parts[1].Split(',').ToList().ConvertAll<int>(number => Int32.Parse(number));
-        Dictionary<string,long> solutionsMap = [];
+        Dictionary<Tuple<string, int>, long> solutionsMap = [];
 
-        totalCombinations += recursivelyGetAllCombinations(parts[0], numbers, solutionsMap);
+        totalCombinations += recursivelyGetAllCombinations(parts[0] + ".", numbers, solutionsMap, 0);
 
         // Console.WriteLine("Total So Far: " + totalCombinations);
         // Console.WriteLine("Starting: " +  parts[0]);
@@ -144,10 +136,6 @@ static void Task2(string[] input){
     for (int i = 0; i < input.Length; i++){
         string[] parts = input[i].Split(' ');
 
-         if (!parts[0].Contains('?')){
-            continue;
-        }
-
         string numberSprings = parts[1];
         string expandedNumberSprings = numberSprings + "," + numberSprings + "," + numberSprings + "," + numberSprings + "," + numberSprings;
 
@@ -155,20 +143,16 @@ static void Task2(string[] input){
 
         string springs = parts[0];
 
-        string expandedSprings = springs + "?" + springs + "?" + springs + "?" + springs + "?" + springs;
+        string expandedSprings = springs + "?" + springs + "?" + springs + "?" + springs + "?" + springs + ".";
 
-        Dictionary<string,long> solutionsMap = [];
+        Dictionary<Tuple<string, int>,long> solutionsMap = [];
 
-        totalCombinations += recursivelyGetAllCombinations(expandedSprings, numbers, solutionsMap);
+        totalCombinations += recursivelyGetAllCombinations(expandedSprings, numbers, solutionsMap, 0);
 
-        Console.WriteLine("Line: " + i+1);
+        Console.WriteLine("Line: " + (i+1));
 
-        // Console.WriteLine("Total So Far: " + totalCombinations);
-        // Console.WriteLine("Starting: " +  parts[0]);
     }
-
     Console.WriteLine(totalCombinations);
-
 }
 
 static void PrintMap(string message, char[,] map) {
