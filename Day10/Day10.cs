@@ -1,5 +1,8 @@
 ﻿
 
+using System.Diagnostics.Metrics;
+using System.Reflection.Metadata;
+
 partial class Program
 {
     
@@ -17,7 +20,7 @@ static void Main()
     }
 
     Task1(map);
-    //Task2(map);
+    Task2(map);
 }
 
 static void PrintMap(string message, char[,] map) {
@@ -186,10 +189,143 @@ static void Task1(char [,] map) {
 }
 
 static void Task2(char [,] map){
-// Try DFS to get one true loop
-// Eliminate all things not in that path
-// Make new map with just one symbol for all loop
-// do intersection algorithm on that
 
+List<Tuple<int,int>> path = GetPath(map);
+
+char[,] pathMap = GetPathMap(path, map);
+
+int totalInner = GetTotalInner(pathMap);
+
+Console.WriteLine(totalInner);
+}
+
+static List<Tuple<int,int>> GetPath(char[,] map){
+    List<Tuple<int,int>> path = [];
+    HashSet<Tuple<int,int>> explored = [];
+
+    Tuple<int,int> start = Tuple.Create(0,0);
+
+    for (int i = 0; i < map.GetLength(0); i++){
+        for (int j = 0; j < map.GetLength(1); j++){
+            if (map[i,j] == 'S'){
+                start = Tuple.Create(i,j);
+            }
+        }
+    }
+
+    return DFS(map, start, explored, path);
+}
+
+static void AddTop2(List<Tuple<int,int>> possiblePlacesToExplore, Tuple<int,int> currentPoint, char[,] map){
+    int i = currentPoint.Item1;
+    int j = currentPoint.Item2;
+
+    if (i>0){
+        possiblePlacesToExplore.Add(Tuple.Create(i-1, j));
+    }
+}
+
+static void AddRight2(List<Tuple<int,int>> possiblePlacesToExplore, Tuple<int,int> currentPoint, char[,] map){
+    int i = currentPoint.Item1;
+    int j = currentPoint.Item2;
+
+    if (j<map.GetLength(1) - 1){
+        possiblePlacesToExplore.Add(Tuple.Create(i, j+1));
+    }
+}
+
+static void AddBottom2(List<Tuple<int,int>> possiblePlacesToExplore, Tuple<int,int> currentPoint, char[,] map){
+    int i = currentPoint.Item1;
+    int j = currentPoint.Item2;
+
+    if (i < map.GetLength(0) - 1){
+        possiblePlacesToExplore.Add(Tuple.Create(i+1, j));
+    }
+}
+
+static void AddLeft2(List<Tuple<int,int>> possiblePlacesToExplore, Tuple<int,int> currentPoint, char[,] map){
+    int i = currentPoint.Item1;
+    int j = currentPoint.Item2;
+
+    if (j>0){
+        possiblePlacesToExplore.Add(Tuple.Create(i, j-1));
+    }
+}
+
+static List<Tuple<int,int>> DFS(char[,] map, Tuple<int,int> currentPoint, HashSet<Tuple<int,int>> explored, List<Tuple<int,int>> currentPath){
+
+    explored.Add(currentPoint);
+
+    if (map[currentPoint.Item1, currentPoint.Item2] == 'S' && currentPath.Count != 0){
+        currentPath.Add(currentPoint);
+        return currentPath;
+    }
+
+    List<Tuple<int,int>> possiblePlacesToExplore = [];
+
+    switch(map[currentPoint.Item1, currentPoint.Item2]){
+        case 'S':
+            AddTop2( possiblePlacesToExplore, currentPoint, map);
+            AddBottom2( possiblePlacesToExplore, currentPoint, map);
+            AddRight2( possiblePlacesToExplore, currentPoint, map);
+            AddLeft2( possiblePlacesToExplore, currentPoint, map);
+            break;
+        case '|':
+            AddTop2(possiblePlacesToExplore,currentPoint, map);
+            AddBottom2(possiblePlacesToExplore,currentPoint, map);
+            break;
+        case '-':
+            AddRight2(possiblePlacesToExplore,currentPoint, map);
+            AddLeft2(possiblePlacesToExplore,currentPoint, map);
+            break;
+        case 'L':
+            AddTop2(possiblePlacesToExplore,currentPoint, map);
+            AddRight2(possiblePlacesToExplore,currentPoint, map);
+            break;
+        case 'J':
+            AddTop2(possiblePlacesToExplore,currentPoint, map);
+            AddLeft2(possiblePlacesToExplore,currentPoint, map);
+            break;
+        case '7':
+            AddLeft2(possiblePlacesToExplore,currentPoint, map);
+            AddBottom2(possiblePlacesToExplore,currentPoint, map);
+            break;
+        case 'F':
+            AddBottom2(possiblePlacesToExplore,currentPoint, map);
+            AddRight2(possiblePlacesToExplore,currentPoint, map);
+            break;
+        case '.':
+            break;
+        default:
+            break;
+    }
+
+    foreach (Tuple<int,int> place in possiblePlacesToExplore){
+        if (!explored.Contains(place)){
+            List<Tuple<int,int>> currentPathPlusThis = currentPath;
+            currentPathPlusThis.Add(currentPoint);
+            List<Tuple<int,int>> path = DFS(map, place, explored, currentPathPlusThis);
+
+            if (path.Count != 0){
+                return path;
+            }
+        }
+    }
+
+    return [];
+}
+
+static char[,] GetPathMap(List<Tuple<int,int>> path, char[,] map){
+    char[,] pathMap = new char[map.GetLength(0),map.GetLength(1)];
+
+    foreach(Tuple<int,int> point in path){
+        pathMap[point.Item1,point.Item2] = '*';
+    }
+
+    return pathMap;
+}
+
+static int GetTotalInner(char[,] pathMap){
+    return 0;
 }
 }
