@@ -195,8 +195,6 @@ Console.WriteLine(totalInner);
 }
 
 static List<Tuple<int,int>> GetPath(char[,] map){
-    List<Tuple<int,int>> path = [];
-    HashSet<Tuple<int,int>> explored = [];
 
     Tuple<int,int> start = Tuple.Create(0,0);
 
@@ -209,140 +207,134 @@ static List<Tuple<int,int>> GetPath(char[,] map){
         }
     }
 
-    return DFS(map, start, explored, path, start);
-}
+    List<Tuple<int,int>> currentPath = [];
+    HashSet<Tuple<int,int>> explored = [];
+    Stack<Tuple<int,int>> placesToSee = [];
 
-static void AddTop2(List<Tuple<int,int>> possiblePlacesToExplore, Tuple<int,int> currentPoint, char[,] map){
-    int i = currentPoint.Item1;
-    int j = currentPoint.Item2;
+    placesToSee.Push(start);
 
-    if (i>0 && "|F7".Contains(map[i-1,j])){
-        possiblePlacesToExplore.Add(Tuple.Create(i-1, j));
-    }
-}
+    while (placesToSee.Count != 0){
 
-static void AddRight2(List<Tuple<int,int>> possiblePlacesToExplore, Tuple<int,int> currentPoint, char[,] map){
-    int i = currentPoint.Item1;
-    int j = currentPoint.Item2;
+        Tuple<int,int> currentPoint = placesToSee.Pop();
 
-    if (j < map.GetLength(1) - 1 && "-J7".Contains(map[i,j+1])){
-        possiblePlacesToExplore.Add(Tuple.Create(i, j+1));
-    }
-}
+        // if (currentPoint.Equals(start) && map[currentPoint.Item1, currentPoint.Item2] != 'S'){
+        //     return currentPath;
+        // }
 
-static void AddBottom2(List<Tuple<int,int>> possiblePlacesToExplore, Tuple<int,int> currentPoint, char[,] map){
-    int i = currentPoint.Item1;
-    int j = currentPoint.Item2;
+        explored.Add(currentPoint);
 
-    if (i < map.GetLength(0) - 1 && "|LJ".Contains(map[i+1,j])){
-        possiblePlacesToExplore.Add(Tuple.Create(i+1, j));
-    }
-}
+        switch(map[currentPoint.Item1, currentPoint.Item2]){
+            case 'S':
+                bool addedTop = false;
+                if (currentPoint.Item1 > 0 && "|F7".Contains(map[currentPoint.Item1 - 1, currentPoint.Item2])){
+                    addedTop = true;
+                    AddTop2( placesToSee, currentPoint, map, explored, start);
+                }
+                bool addedBottom = false;
+                if (currentPoint.Item1 < map.GetLength(dimension: 0)-1 && "|LJ".Contains(map[currentPoint.Item1 + 1, currentPoint.Item2])){
+                    addedBottom = true;
+                    AddBottom2( placesToSee, currentPoint, map, explored, start);
+                }
+                bool addedRight = false;
+                if (currentPoint.Item2 < map.GetLength(dimension: 1)-1 && "-J7".Contains(map[currentPoint.Item1, currentPoint.Item2 + 1])){
+                    addedRight = true;
+                    AddRight2( placesToSee, currentPoint, map, explored, start);
+                }
+                bool addedLeft = false;
+                if (currentPoint.Item2 > 0 && "-LF".Contains(map[currentPoint.Item1, currentPoint.Item2 - 1])) {
+                    addedLeft = true;
+                    AddLeft2( placesToSee, currentPoint, map, explored, start);
+                }
 
-static void AddLeft2(List<Tuple<int,int>> possiblePlacesToExplore, Tuple<int,int> currentPoint, char[,] map){
-    int i = currentPoint.Item1;
-    int j = currentPoint.Item2;
-
-    if (j>0 && "-LF".Contains(map[i,j-1])){
-        possiblePlacesToExplore.Add(Tuple.Create(i, j-1));
-    }
-}
-
-static List<Tuple<int,int>> DFS(char[,] map, Tuple<int,int> currentPoint, HashSet<Tuple<int,int>> explored, List<Tuple<int,int>> currentPath, Tuple<int,int> goal){
-
-    Console.WriteLine("Current Point: " + currentPoint);
-
-    Console.WriteLine("Explored: " + explored.Count);
-    PrintPath("current Path", currentPath);
-    explored.Add(currentPoint);
-
-    List<Tuple<int,int>> possiblePlacesToExplore = [];
-
-    switch(map[currentPoint.Item1, currentPoint.Item2]){
-        case 'S':
-            bool addedTop = false;
-            if (currentPoint.Item1 > 0 && "|F7".Contains(map[currentPoint.Item1 - 1, currentPoint.Item2])){
-                addedTop = true;
-                AddTop2( possiblePlacesToExplore, currentPoint, map);
-            }
-            bool addedBottom = false;
-            if (currentPoint.Item1 < map.GetLength(dimension: 0)-1 && "|LJ".Contains(map[currentPoint.Item1 + 1, currentPoint.Item2])){
-                addedBottom = true;
-                AddBottom2( possiblePlacesToExplore, currentPoint, map);
-            }
-            bool addedRight = false;
-            if (currentPoint.Item2 < map.GetLength(dimension: 1)-1 && "-J7".Contains(map[currentPoint.Item1, currentPoint.Item2 + 1])){
-                addedRight = true;
-                AddRight2( possiblePlacesToExplore, currentPoint, map);
-            }
-            bool addedLeft = false;
-            if (currentPoint.Item2 > 0 && "-LF".Contains(map[currentPoint.Item1, currentPoint.Item2 - 1])) {
-                addedLeft = true;
-                AddLeft2( possiblePlacesToExplore, currentPoint, map);
-            }
-
-            if (addedTop && addedBottom){
-                map[currentPoint.Item1, currentPoint.Item2] = '|';
-            } else if (addedTop && addedLeft){
-                 map[currentPoint.Item1, currentPoint.Item2] = 'J';
-            } else if (addedTop && addedRight){
-                map[currentPoint.Item1, currentPoint.Item2] = 'L';
-            } else if (addedBottom && addedLeft){
-                map[currentPoint.Item1, currentPoint.Item2] = '7';
-            } else if (addedBottom && addedRight){
-                map[currentPoint.Item1, currentPoint.Item2] = 'F';
-            } else if (addedLeft && addedRight){
-                map[currentPoint.Item1, currentPoint.Item2] = '-';
-            }
-            
-            break;
-        case '|':
-            AddTop2(possiblePlacesToExplore,currentPoint, map);
-            AddBottom2(possiblePlacesToExplore,currentPoint, map);
-            break;
-        case '-':
-            AddRight2(possiblePlacesToExplore,currentPoint, map);
-            AddLeft2(possiblePlacesToExplore,currentPoint, map);
-            break;
-        case 'L':
-            AddTop2(possiblePlacesToExplore,currentPoint, map);
-            AddRight2(possiblePlacesToExplore,currentPoint, map);
-            break;
-        case 'J':
-            AddTop2(possiblePlacesToExplore,currentPoint, map);
-            AddLeft2(possiblePlacesToExplore,currentPoint, map);
-            break;
-        case '7':
-            AddLeft2(possiblePlacesToExplore,currentPoint, map);
-            AddBottom2(possiblePlacesToExplore,currentPoint, map);
-            break;
-        case 'F':
-            AddBottom2(possiblePlacesToExplore,currentPoint, map);
-            AddRight2(possiblePlacesToExplore,currentPoint, map);
-            break;
-        default:
-            break;
-    }
-
-    foreach (Tuple<int,int> place in possiblePlacesToExplore){
-
-        if (possiblePlacesToExplore.Contains(goal) && possiblePlacesToExplore.Count == 1){
-            Console.WriteLine("DONE");
-            return currentPath;
-        }
-
-        if (!explored.Contains(place)){
-
-            currentPath.Add(currentPoint);
-            List<Tuple<int,int>> path = DFS(map, place, explored, currentPath, goal);
-
-            if (path.Count != 0){
-                return path;
-            }
+                if (addedTop && addedBottom){
+                    map[currentPoint.Item1, currentPoint.Item2] = '|';
+                } else if (addedTop && addedLeft){
+                    map[currentPoint.Item1, currentPoint.Item2] = 'J';
+                } else if (addedTop && addedRight){
+                    map[currentPoint.Item1, currentPoint.Item2] = 'L';
+                } else if (addedBottom && addedLeft){
+                    map[currentPoint.Item1, currentPoint.Item2] = '7';
+                } else if (addedBottom && addedRight){
+                    map[currentPoint.Item1, currentPoint.Item2] = 'F';
+                } else if (addedLeft && addedRight){
+                    map[currentPoint.Item1, currentPoint.Item2] = '-';
+                }
+                
+                break;
+            case '|':
+                AddTop2(placesToSee,currentPoint, map, explored, goal: start);
+                AddBottom2(placesToSee,currentPoint, map, explored, start);
+                break;
+            case '-':
+                AddRight2(placesToSee,currentPoint, map, explored, start);
+                AddLeft2(placesToSee,currentPoint, map, explored, start);
+                break;
+            case 'L':
+                AddTop2(placesToSee,currentPoint, map, explored, start);
+                AddRight2(placesToSee,currentPoint, map, explored, start);
+                break;
+            case 'J':
+                AddTop2(placesToSee,currentPoint, map, explored, start);
+                AddLeft2(placesToSee,currentPoint, map, explored, start);
+                break;
+            case '7':
+                AddLeft2(placesToSee,currentPoint, map, explored, start);
+                AddBottom2(placesToSee,currentPoint, map, explored, start);
+                break;
+            case 'F':
+                AddBottom2(placesToSee,currentPoint, map, explored, start);
+                AddRight2(placesToSee,currentPoint, map, explored, start);
+                break;
+            default:
+                break;
         }
     }
 
-    return [];
+   return currentPath;
+}
+
+static void AddTop2(Stack<Tuple<int,int>> placesToSee, Tuple<int,int> currentPoint, char[,] map, HashSet<Tuple<int,int>> explored, Tuple<int,int> goal){
+    int i = currentPoint.Item1;
+    int j = currentPoint.Item2;
+
+    Tuple<int,int> nextPoint = Tuple.Create(i-1,j);
+
+    if (i>0 && "|F7".Contains(map[i-1,j]) && (!explored.Contains(nextPoint) || nextPoint.Equals(goal)) && !placesToSee.Contains(nextPoint)){ 
+        placesToSee.Push(nextPoint);
+    }
+}
+
+static void AddRight2(Stack<Tuple<int,int>> placesToSee, Tuple<int,int> currentPoint, char[,] map, HashSet<Tuple<int,int>> explored, Tuple<int,int> goal){
+    int i = currentPoint.Item1;
+    int j = currentPoint.Item2;
+
+    Tuple<int,int> nextPoint = Tuple.Create(i,j+1);
+
+    if (j < map.GetLength(1) - 1 && "-J7".Contains(map[i,j+1]) && (!explored.Contains(nextPoint) || nextPoint.Equals(goal)) && !placesToSee.Contains(nextPoint)){ 
+        placesToSee.Push(nextPoint);
+    }
+}
+
+static void AddBottom2(Stack<Tuple<int,int>> placesToSee, Tuple<int,int> currentPoint, char[,] map, HashSet<Tuple<int,int>> explored, Tuple<int,int> goal){
+    int i = currentPoint.Item1;
+    int j = currentPoint.Item2;
+
+    Tuple<int,int> nextPoint = Tuple.Create(i+1,j);
+
+    if (i < map.GetLength(0) - 1 && "|LJ".Contains(map[i+1,j]) && (!explored.Contains(nextPoint) || nextPoint.Equals(goal)) && !placesToSee.Contains(nextPoint)){ 
+        placesToSee.Push(nextPoint);
+    }
+}
+
+static void AddLeft2(Stack<Tuple<int,int>> placesToSee, Tuple<int,int> currentPoint, char[,] map, HashSet<Tuple<int,int>> explored, Tuple<int,int> goal){
+    int i = currentPoint.Item1;
+    int j = currentPoint.Item2;
+
+    Tuple<int,int> nextPoint = Tuple.Create(i,j-1);
+
+    if (j>0 && "-LF".Contains(map[i,j-1]) && (!explored.Contains(nextPoint) || nextPoint.Equals(goal)) && !placesToSee.Contains(nextPoint)){ 
+            placesToSee.Push(nextPoint);
+    }
 }
 
 static char[,] GetPathMap(List<Tuple<int,int>> path, char[,] map){
