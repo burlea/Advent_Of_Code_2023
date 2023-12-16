@@ -1,6 +1,8 @@
 ﻿
 
+using System.Data;
 using System.Diagnostics.Metrics;
+using System.Net.NetworkInformation;
 using System.Reflection.Metadata;
 
 partial class Program
@@ -19,7 +21,7 @@ static void Main()
         }
     }
 
-    Task1(map);
+    //Task1(map);
     Task2(map);
 }
 
@@ -37,21 +39,13 @@ static void PrintMap(string message, char[,] map) {
     Console.WriteLine("");
 }
 
-static void PrintMap(string message, int[,] map) {
+static void PrintPath(string message, List<Tuple<int,int>> path) {
 
     Console.WriteLine(message + ": ");
 
-    for (int i = 0; i < map.GetLength(0); i++){
-        for(int j = 0; j < map.GetLength(1); j++) {
-            int dist = map[i,j];
-
-            if (dist <= 9){
-                Console.Write("  " + dist);
-            } else{
-                Console.Write(" " + dist);
-            }
-        }
-        Console.WriteLine("");
+    for (int i = 0; i < path.Count; i++){
+      
+        Console.WriteLine("(" + path[i].Item1 + "," + path[i].Item2 + "), ");
     }
 
     Console.WriteLine("");
@@ -146,9 +140,6 @@ static void AddSpots(Tuple<int,int> spot, char [,] map, List<Tuple<int,int>> nex
         default:
             break;
     }
-
-
-
 }
 
 static void Task1(char [,] map) {
@@ -192,7 +183,11 @@ static void Task2(char [,] map){
 
 List<Tuple<int,int>> path = GetPath(map);
 
+PrintPath("Path", path);
+
 char[,] pathMap = GetPathMap(path, map);
+
+PrintMap("Path Map", pathMap);
 
 int totalInner = GetTotalInner(pathMap);
 
@@ -209,18 +204,19 @@ static List<Tuple<int,int>> GetPath(char[,] map){
         for (int j = 0; j < map.GetLength(1); j++){
             if (map[i,j] == 'S'){
                 start = Tuple.Create(i,j);
+                break;
             }
         }
     }
 
-    return DFS(map, start, explored, path);
+    return DFS(map, start, explored, path, start);
 }
 
 static void AddTop2(List<Tuple<int,int>> possiblePlacesToExplore, Tuple<int,int> currentPoint, char[,] map){
     int i = currentPoint.Item1;
     int j = currentPoint.Item2;
 
-    if (i>0){
+    if (i>0 && "|F7".Contains(map[i-1,j])){
         possiblePlacesToExplore.Add(Tuple.Create(i-1, j));
     }
 }
@@ -229,7 +225,7 @@ static void AddRight2(List<Tuple<int,int>> possiblePlacesToExplore, Tuple<int,in
     int i = currentPoint.Item1;
     int j = currentPoint.Item2;
 
-    if (j<map.GetLength(1) - 1){
+    if (j < map.GetLength(1) - 1 && "-J7".Contains(map[i,j+1])){
         possiblePlacesToExplore.Add(Tuple.Create(i, j+1));
     }
 }
@@ -238,7 +234,7 @@ static void AddBottom2(List<Tuple<int,int>> possiblePlacesToExplore, Tuple<int,i
     int i = currentPoint.Item1;
     int j = currentPoint.Item2;
 
-    if (i < map.GetLength(0) - 1){
+    if (i < map.GetLength(0) - 1 && "|LJ".Contains(map[i+1,j])){
         possiblePlacesToExplore.Add(Tuple.Create(i+1, j));
     }
 }
@@ -247,28 +243,58 @@ static void AddLeft2(List<Tuple<int,int>> possiblePlacesToExplore, Tuple<int,int
     int i = currentPoint.Item1;
     int j = currentPoint.Item2;
 
-    if (j>0){
+    if (j>0 && "-LF".Contains(map[i,j-1])){
         possiblePlacesToExplore.Add(Tuple.Create(i, j-1));
     }
 }
 
-static List<Tuple<int,int>> DFS(char[,] map, Tuple<int,int> currentPoint, HashSet<Tuple<int,int>> explored, List<Tuple<int,int>> currentPath){
+static List<Tuple<int,int>> DFS(char[,] map, Tuple<int,int> currentPoint, HashSet<Tuple<int,int>> explored, List<Tuple<int,int>> currentPath, Tuple<int,int> goal){
 
+    Console.WriteLine("Current Point: " + currentPoint);
+
+    Console.WriteLine("Explored: " + explored.Count);
+    PrintPath("current Path", currentPath);
     explored.Add(currentPoint);
-
-    if (map[currentPoint.Item1, currentPoint.Item2] == 'S' && currentPath.Count != 0){
-        currentPath.Add(currentPoint);
-        return currentPath;
-    }
 
     List<Tuple<int,int>> possiblePlacesToExplore = [];
 
     switch(map[currentPoint.Item1, currentPoint.Item2]){
         case 'S':
-            AddTop2( possiblePlacesToExplore, currentPoint, map);
-            AddBottom2( possiblePlacesToExplore, currentPoint, map);
-            AddRight2( possiblePlacesToExplore, currentPoint, map);
-            AddLeft2( possiblePlacesToExplore, currentPoint, map);
+            bool addedTop = false;
+            if (currentPoint.Item1 > 0 && "|F7".Contains(map[currentPoint.Item1 - 1, currentPoint.Item2])){
+                addedTop = true;
+                AddTop2( possiblePlacesToExplore, currentPoint, map);
+            }
+            bool addedBottom = false;
+            if (currentPoint.Item1 < map.GetLength(dimension: 0)-1 && "|LJ".Contains(map[currentPoint.Item1 + 1, currentPoint.Item2])){
+                addedBottom = true;
+                AddBottom2( possiblePlacesToExplore, currentPoint, map);
+            }
+            bool addedRight = false;
+            if (currentPoint.Item2 < map.GetLength(dimension: 1)-1 && "-J7".Contains(map[currentPoint.Item1, currentPoint.Item2 + 1])){
+                addedRight = true;
+                AddRight2( possiblePlacesToExplore, currentPoint, map);
+            }
+            bool addedLeft = false;
+            if (currentPoint.Item2 > 0 && "-LF".Contains(map[currentPoint.Item1, currentPoint.Item2 - 1])) {
+                addedLeft = true;
+                AddLeft2( possiblePlacesToExplore, currentPoint, map);
+            }
+
+            if (addedTop && addedBottom){
+                map[currentPoint.Item1, currentPoint.Item2] = '|';
+            } else if (addedTop && addedLeft){
+                 map[currentPoint.Item1, currentPoint.Item2] = 'J';
+            } else if (addedTop && addedRight){
+                map[currentPoint.Item1, currentPoint.Item2] = 'L';
+            } else if (addedBottom && addedLeft){
+                map[currentPoint.Item1, currentPoint.Item2] = '7';
+            } else if (addedBottom && addedRight){
+                map[currentPoint.Item1, currentPoint.Item2] = 'F';
+            } else if (addedLeft && addedRight){
+                map[currentPoint.Item1, currentPoint.Item2] = '-';
+            }
+            
             break;
         case '|':
             AddTop2(possiblePlacesToExplore,currentPoint, map);
@@ -294,17 +320,21 @@ static List<Tuple<int,int>> DFS(char[,] map, Tuple<int,int> currentPoint, HashSe
             AddBottom2(possiblePlacesToExplore,currentPoint, map);
             AddRight2(possiblePlacesToExplore,currentPoint, map);
             break;
-        case '.':
-            break;
         default:
             break;
     }
 
     foreach (Tuple<int,int> place in possiblePlacesToExplore){
+
+        if (possiblePlacesToExplore.Contains(goal) && possiblePlacesToExplore.Count == 1){
+            Console.WriteLine("DONE");
+            return currentPath;
+        }
+
         if (!explored.Contains(place)){
-            List<Tuple<int,int>> currentPathPlusThis = currentPath;
-            currentPathPlusThis.Add(currentPoint);
-            List<Tuple<int,int>> path = DFS(map, place, explored, currentPathPlusThis);
+
+            currentPath.Add(currentPoint);
+            List<Tuple<int,int>> path = DFS(map, place, explored, currentPath, goal);
 
             if (path.Count != 0){
                 return path;
@@ -319,13 +349,42 @@ static char[,] GetPathMap(List<Tuple<int,int>> path, char[,] map){
     char[,] pathMap = new char[map.GetLength(0),map.GetLength(1)];
 
     foreach(Tuple<int,int> point in path){
-        pathMap[point.Item1,point.Item2] = '*';
+
+        if (map[point.Item1,point.Item2] == '-'){
+            pathMap[point.Item1,point.Item2] = '-';
+        } else if ("|LF7J".Contains(map[point.Item1,point.Item2])){
+            pathMap[point.Item1,point.Item2] = '|';
+        }
+    }
+
+    for(int i = 0; i < pathMap.GetLength(0);i++){
+        for (int j = 0; j < pathMap.GetLength(1); j++){
+            if (pathMap[i,j] != '-' && pathMap[i,j] != '|'){
+                pathMap[i,j] = '.';
+            }
+        }
     }
 
     return pathMap;
 }
 
 static int GetTotalInner(char[,] pathMap){
-    return 0;
+
+    int totalInner = 0;
+
+    for (int i = 0; i < pathMap.GetLength(0); i++){
+        int intersections = 0;
+        for (int j = 0; j < pathMap.GetLength(1); j++){
+            if (pathMap[i,j] == '.'){
+                if (intersections % 2 == 1){
+                    totalInner++;
+                }
+            } else if (pathMap[i,j] == '|'){
+                intersections++;
+            }
+        }
+    }
+
+    return totalInner;
 }
 }
