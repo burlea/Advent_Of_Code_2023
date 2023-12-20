@@ -3,8 +3,10 @@ using System.Buffers;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Globalization;
 using System.Net.Security;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Security;
 using System.Text.Json.Serialization;
@@ -14,6 +16,8 @@ namespace Day19
 {
     partial class Program
   {
+
+    static long total = 0;
     static void Main(string[] args)
     {
         string[] input = File.ReadAllLines("input.txt");
@@ -125,22 +129,121 @@ namespace Day19
 
     static void Task2(string[] input){
 
-        // List<string> workflowStrings = [];
+        List<string> workflowStrings = [];
 
-        // for (int i = 0; i < input.Length; i++){
-        //     if (input[i] == ""){
-        //         break;
-        //     } else {
-        //         string workflowString = input[i]; 
-        //         workflowStrings.Add(workflowString);
-        //     }
-        // }
+        for (int i = 0; i < input.Length; i++){
+            if (input[i] == ""){
+                break;
+            } else {
+                string workflowString = input[i]; 
+                workflowStrings.Add(workflowString);
+            }
+        }
+        
+        Dictionary<string, Workflow> workflows = GetWorkflows(workflowStrings);
 
-        // Dictionary<string, Workflow> workflows = GetWorkflows(workflowStrings);
+        Tuple<int,int> [] ranges = [Tuple.Create(1,4000), Tuple.Create(1,4000), Tuple.Create(1,4000), Tuple.Create(1,4000)];
 
-        // List<Step>
+        GoThroughWorkflow(workflows, workflows["in"], ranges);
 
+        Console.WriteLine(total);
+    }
 
+    static void GoThroughWorkflow(Dictionary<string, Workflow> workflows, Workflow currentWorkflow, Tuple<int,int>[] ranges){
+
+        foreach(Step step in currentWorkflow.steps){
+            if (step.justEnd){
+                if (step.decision!=null){
+                    
+                    if (step.decision=="A"){
+                        GetCombinations(ranges);
+                    }
+                    
+                } else {
+                    GoThroughWorkflow(workflows, workflows[step.nextWorkflow],ranges);
+                }
+            } else {
+                char operation = step.operation;
+
+                Tuple<int,int>[] rangesFulfillCondition;
+                Tuple<int,int>[] rangesNotFulfillCondition;
+                Tuple<Tuple<int,int>,Tuple<int,int>> newRanges;
+
+                switch(step.element){
+                    case 'x':
+                        newRanges = GetRangesAfterCondition(ranges[0], step.operation, step.contraint);
+                        rangesFulfillCondition = [newRanges.Item1, ranges[1], ranges[2], ranges[3]];
+                        rangesNotFulfillCondition = [newRanges.Item2, ranges[1], ranges[2], ranges[3]];
+                        break;
+                    case 'm':
+                        newRanges = GetRangesAfterCondition(ranges[1], step.operation, step.contraint);
+                        rangesFulfillCondition = [ranges[0], newRanges.Item1, ranges[2], ranges[3]];
+                        rangesNotFulfillCondition = [ranges[0], newRanges.Item2, ranges[2], ranges[3]];
+                        break;
+                    case 'a':
+                        newRanges = GetRangesAfterCondition(ranges[2], step.operation, step.contraint);
+                        rangesFulfillCondition = [ranges[0], ranges[1],newRanges.Item1, ranges[3]];
+                        rangesNotFulfillCondition = [ranges[0], ranges[1], newRanges.Item2, ranges[3]];
+                        break;
+                    case 's':
+                        newRanges = GetRangesAfterCondition(ranges[3], step.operation, step.contraint);
+                        rangesFulfillCondition = [ranges[0], ranges[1], ranges[2], newRanges.Item1];
+                        rangesNotFulfillCondition = [ranges[0], ranges[1], ranges[2], newRanges.Item2];
+                        break;
+                    default:
+                        rangesFulfillCondition = [ranges[0], ranges[1], ranges[2], ranges[3]];
+                        rangesNotFulfillCondition = [ranges[0], ranges[1], ranges[2], ranges[3]];
+                        break;
+                }
+
+                if (step.decision != null){
+                
+                    if (step.decision=="A"){
+                         GetCombinations(rangesFulfillCondition);
+                    }
+
+                } else {
+                    GoThroughWorkflow(workflows, workflows[step.nextWorkflow],rangesFulfillCondition);
+                }
+
+                ranges = rangesNotFulfillCondition;
+            }
+        }
+    }
+
+    static Tuple<Tuple<int,int>,Tuple<int,int>> GetRangesAfterCondition (Tuple<int,int> range, char operation, int contraint){
+        Tuple<int,int> fulfilledRange;
+        Tuple<int,int> unfulfilledRange;
+
+        if (operation == '<'){
+
+            if (range.Item1 <= contraint - 1){
+                fulfilledRange = Tuple.Create(item1: range.Item1, contraint - 1);
+            } else {
+                fulfilledRange = Tuple.Create(-1,-1);
+            }
+
+            if (contraint <= range.Item2){
+                unfulfilledRange = Tuple.Create(contraint, range.Item2);
+            } else {
+                unfulfilledRange = Tuple.Create(-1,-1);
+            }
+
+        } else {
+            if (contraint+1 <= range.Item2){
+                fulfilledRange = Tuple.Create(contraint+1, range.Item2);
+            } else {
+                fulfilledRange = Tuple.Create(-1,-1);
+            }
+
+            if (range.Item1 <= contraint){
+                unfulfilledRange = Tuple.Create(range.Item1, contraint);
+            } else {
+                unfulfilledRange = Tuple.Create(-1,-1);
+            }
+        }
+
+        return Tuple.Create(fulfilledRange, unfulfilledRange);
     }
 
     static List<Part> GetParts(List<string> partsStrings){
@@ -161,6 +264,32 @@ namespace Day19
         }
 
         return parts;
+    }
+
+    static void GetCombinations(Tuple<int,int>[] ranges){
+        Tuple<int,int> xRange = ranges[0];
+        Tuple<int,int> mRange = ranges[1];
+        Tuple<int,int> aRange = ranges[2];
+        Tuple<int,int> sRange = ranges[3];
+
+        if (xRange.Item1 < 0 || xRange.Item2 < 0 || 
+            mRange.Item1 < 0 || mRange.Item2 < 0 || 
+            aRange.Item1 < 0 || aRange.Item2 < 0 || 
+            sRange.Item1 < 0 || sRange.Item2 < 0){
+
+        } else {
+
+        long xTotal = xRange.Item2-xRange.Item1 + 1;
+        long mTotal = mRange.Item2-mRange.Item1 + 1;
+        long aTotal = aRange.Item2-aRange.Item1 + 1;
+        long sTotal = sRange.Item2-sRange.Item1 + 1;
+
+        long total1  = xTotal * mTotal;
+        long total2 = total1 * aTotal;
+        long total3 = total2 * sTotal;
+
+        total += total3;
+        }
     }
 
     static Dictionary<string, Workflow> GetWorkflows(List<string> workflowStrings){
